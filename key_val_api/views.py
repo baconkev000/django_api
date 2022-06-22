@@ -57,3 +57,12 @@ class KeyValueDelete(APIView):
         key = KeyVal.objects.get(key=keyParam)
         key.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class KeyValueDeletePK(APIView):
+
+    # deletes a specified key/val pair
+    def delete(self, request, pk):
+        key = KeyVal.objects.get(id=pk)
+        key.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
