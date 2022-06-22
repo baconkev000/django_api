@@ -1,36 +1,17 @@
 from pyexpat import model
-from urllib import response
-from xmlrpc.client import ResponseError
+
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.schemas import AutoSchema
 
 from .models import KeyVal
 from .serializers import KeyValueSerializer
 
-import coreapi
-
-class KeyValueSchema(AutoSchema):
-
-    def get_manual_fields(self, path, method):
-        extra_fields = []
-        if method.lower() in ['post', 'put']:
-            extra_fields = [
-                coreapi.Field('key')
-            ]
-
-            manual_fields = super().get_manual_fields(path, method)
-        return manual_fields + extra_fields
-
-
 # Create your views here.
 class KeyValueList(APIView):
 
-    schema = KeyValueSchema
-
-    # simply gets all objects and returns usable data
+    # gets all objects and returns usable data
     def get(self, request):
         keys = KeyVal.objects.all()
         serializer = KeyValueSerializer(keys, many=True)
@@ -45,21 +26,34 @@ class KeyValueList(APIView):
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class KeyValueDetail(APIView):
-
-    schema = KeyValueSchema
     
-    def delete(self, request, pk):
-        key = KeyVal.objects.get(id=pk)
+    # gets and returns the data of the requested key
+    def get(self, request, keyParam):
+        currentKey = KeyVal.objects.get(key=keyParam)
+        serializer = KeyValueSerializer(currentKey)
+        return Response(serializer.data)
+
+    # increments val of specified key by specified num
+    def put(self, request, keyParam):
+        key = KeyVal.objects.get(key=keyParam)
+        data = request.data
+        
+        try:
+            key.val = key.val + int(data['inc'])
+            key.save()
+
+            serializer = KeyValueSerializer(key)
+            return Response(serializer.data)
+        except ValueError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        except KeyError:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    
+class KeyValueDelete(APIView):
+
+    # deletes a specified key/val pair
+    def delete(self, request, keyParam):
+        key = KeyVal.objects.get(key=keyParam)
         key.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-    # takes two args from request -- key and inc (incrementing number)
-    def put(self, request, pk):
-        key = KeyVal.objects.get(id=pk)
-        # serializer transforms data in to usable code and then we update the 
-        serializer = KeyValueSerializer(key, data=request.data)
-        if serializer.is_valid():
-            serializer.val = serializer.val + 1
-            serializer.save()
-            return Response(serializer.data)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
