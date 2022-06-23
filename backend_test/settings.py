@@ -41,8 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'requests',
+    'pillow',
     'key_val_api',
-    'dog_service',
+    'dogs_api',
 ]
 
 MIDDLEWARE = [
