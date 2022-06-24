@@ -3,11 +3,15 @@ from django.db import models
 # Create your models here.
 class DogInfo(models.Model):
     breed = models.CharField(max_length=500)
-    url = models.CharField(max_length=500)
-    img = models.ImageField()
+    org_img = models.CharField(max_length=500)
+    mod_img = models.CharField(max_length=500)
+    test_img = models.ImageField(null=True)
 
-    def __str__(self):
+    def __breed__(self):
         return self.breed
     
-    def __str_url__(self):
+    def __str_org_img__(self):
+        return self.url
+    
+    def __str_mod_img__(self):
         return self.url
