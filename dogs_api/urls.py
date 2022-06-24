@@ -5,7 +5,7 @@ from django.conf import settings
 
 urlpatterns = [
     path('', views.DogInfoList.as_view(), name="list"),
-    path('<int:pk>/', views.DogImagesMod.as_view(), name="detail"),
+    path('<int:pk>/', views.DogImagesMod.as_view(), name="images-res"),
 ]   
 
 urlpatterns += static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)

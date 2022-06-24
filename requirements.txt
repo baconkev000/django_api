@@ -3,3 +3,6 @@ psycopg2>=2.8
 djangorestframework
 requests
 pillow
+pyaml
+uritemplate
+coreapi
