@@ -10,6 +10,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('keyval/', include('key_val_api.urls')),
     path('dogs/', include('dogs_api.urls')),
-    path('schema/', get_schema_view(title="API Schema"), name='openapi-schema'),
-    path('docs/', include_docs_urls(title="API Docs")),
+    path('schema/', get_schema_view(title='API Schema'), name='openapi-schema'),
+    path('docs/', include_docs_urls(title='API Docs')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
