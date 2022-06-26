@@ -12,11 +12,18 @@ from dogs_api.models import DogInfo
 from dogs_api.serializers import DogsInfoSerializer
 import requests
 
+import coreapi
+import coreschema
+from rest_framework.schemas import AutoSchema, ManualSchema
 import urllib.request
 
 # Gets a list of all dogs
 class DogInfoList(APIView):
+    """
+    Returns a list of all dogs in the database. Contains: dog breed, image of dog, and grayscale image of dog
+    """
     def get(self, request):
+        
         if DogInfo.objects.all().count() != 24:
             add_dogs()
 
@@ -25,6 +32,10 @@ class DogInfoList(APIView):
         return Response(serializer.data)
 
 class DogImagesMod(APIView):
+    """
+    Returns a single dog from the database. Must be specified by id number.
+     Contains: dog breed, image of dog, and grayscale image of dog
+    """
     def get(self, request, pk):
         if DogInfo.objects.all().count() != 24:
             add_dogs()

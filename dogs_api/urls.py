@@ -8,4 +8,5 @@ urlpatterns = [
     path('<int:pk>/', views.DogImagesMod.as_view(), name='dog-info'),
 ]   
 
+# specifies where all dog images should be stored
 urlpatterns += static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)
