@@ -14,12 +14,12 @@
     {# Display django.contrib.messages as Bootstrap alerts #}
     </head>
     <body>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container">
                 <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <div class="navbar-nav">
-                    <a class="nav-item nav-link" href="{% url 'index' %}">Recreate Dogs API</a>
-                    <a class="nav-item nav-link" href="{% url 'howto-keyval' %}">Recreate KeyVal API</a>
+                    <a class="nav-item nav-link" href="{% url 'index' %}">Dog Image API</a>
+                    <a class="nav-item nav-link" href="{% url 'howto-keyval' %}">Key Value API</a>
                     <a class="nav-item nav-link" href="http://localhost:8000/docs">API Docs</a>
                 </div>
                 </div>
@@ -29,7 +29,7 @@
         <section>
             <div class="container">
                 <div class="row">
-                    <h2 id="index-title">How To Recreate the Key Value APIs</h2>
+                    <h2 id="index-title">Key Value API</h2>
                     <br />
                     <p>This documentation assumes that you have already created a django project and are using Docker Compose.</p>
                     <br />
