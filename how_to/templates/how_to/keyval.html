@@ -1,0 +1,290 @@
+<html>
+    <head>
+        <title>DOCS</title>
+        {# Load the tag library #}
+    {% load bootstrap5 %}
+
+    {# Load CSS and JavaScript #}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+    {% load static %}
+
+    <link rel="stylesheet" type="text/css" href="{% static 'how_to/style.css' %}">
+
+    {# Display django.contrib.messages as Bootstrap alerts #}
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container">
+                <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                <div class="navbar-nav">
+                    <a class="nav-item nav-link" href="{% url 'index' %}">Recreate Dogs API</a>
+                    <a class="nav-item nav-link" href="{% url 'howto-keyval' %}">Recreate KeyVal API</a>
+                    <a class="nav-item nav-link" href="http://localhost:8000/docs">API Docs</a>
+                </div>
+                </div>
+            </div>
+        </nav>
+
+        <section>
+            <div class="container">
+                <div class="row">
+                    <h2 id="index-title">How To Recreate the Key Value APIs</h2>
+                    <br />
+                    <p>This documentation assumes that you have already created a django project and are using Docker Compose.</p>
+                    <br />
+                </div>
+            </div>
+        </section>
+
+        <section class="section-background">
+            <div class="container objectives">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <h3 class="info-header">Objectives</h3>
+                        <ul>
+                            <li>Create an API endpoint that allows keys to be created as strings with a default integer value</li>
+                            <li>Create an API endpoint that increments the value of any given key</li>
+                            <li>Create an API endpoint to list all keys and their corresponding values</li>
+                            <li>An attempt should be made to update incremented values a minimum of 10 seconds,
+                                regardless of the number of requests or data currently being processed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container packages">
+                <div class="row">
+                    <h3 class="info-header">Important Packages to Include</h3>
+                    <p class="paragraphs">
+                        To ensure that everything goes smoothly, be sure to include all of these packages into your requirements.text file.
+                    </p>
+                    <pre>
+                        <code>
+                            Django>=3.0,<4.0
+                            psycopg2>=2.8
+                            djangorestframework
+                            requests
+                        </code>
+                    </pre>
+
+                    <p class="paragraphs">
+                        Next visit your settings.py file and include the following snippet as well:
+                    </p>
+                    <pre>
+                        <code>
+                            CONN_MAX_AGE = 3000
+                        </code>
+                    </pre>
+                    <p>
+                        According to the django documenation "Persistent connections avoid the overhead of re-establishing a connection to the database in each request. They're controlled by the <strong>CONN_MAX_AGE</strong> parameter which defines the maximum lifetime of a connection. It can be set independently for each database.
+                    </p>
+                    <p>
+                        The default value is 0, preserving the historical behavior of closing the database connection at the end of each request. To enable persistent connections, set CONN_MAX_AGE to a positive integer of seconds. For unlimited persistent connections, set it to None."
+                        This helps us handle large amounts of requests, so we don't overwork the db.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-background">
+            <div class="container models">
+                <div class="row">
+                    <h3 class="info-header">Create the Model</h3>
+                    <div>
+                        <p class="paragraphs">
+                            Create two model fields: <strong>key and val.</strong> The two fields represent the key value pair that the api will return.
+                        <br />
+                        Define them like so:
+                        </p>
+                        <div>
+                            <pre>
+                                <code>
+                                    from django.db import models
+
+                                    class KeyVal(models.Model):
+                                        key = models.CharField(max_length=50, primary_key=True)
+                                        val = models.IntegerField(default=0)
+                                    
+                                        def __str__(self):
+                                            return self.key
+                                    
+                                        def __str_val__(self):
+                                            return self.val
+                                </code>
+                            </pre>
+                        </div>
+                        <p class="paragraphs">
+                        Don't forget to make migrations. The command should looke like this:
+                        </p>
+                        <div>
+                            <pre>
+                                <code>
+                                    docker-compose exec web manage.py makemigrations
+                                    docker-compose exec web manage.py migrate
+                                </code>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            <div>
+        </section>
+
+        <section>
+            <div class="container serializers">
+                <div class="row">
+                    <h3 class="info-header">Create the Serializer</h3>
+                    <div>
+                        <p class="paragraphs">
+                            Create the serializers for each model field like this: 
+                        </p>
+                        <div>
+                            <pre>
+                                <code>
+                                    from rest_framework import serializers
+                                    from .models import KeyVal
+                                    
+                                    class KeyValueSerializer(serializers.ModelSerializer):
+                                        key = serializers.CharField(required=True, allow_blank=False)
+                                        val = serializers.IntegerField(read_only=True)
+                                    
+                                        class Meta:
+                                            # specifies what information is shown in the api response -- __all__ shows all info
+                                            model = KeyVal
+                                            fields = '__all__'
+                                    
+                                </code>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            <div>
+        </section>
+        
+        <section class="section-background">
+            <div class="container views">
+                <div class="row">
+                    <h3 class="info-header">Create the Views</h3>
+                    <div>
+                        <p class="paragraphs">
+                            We have several api endpoints that need to be created. 
+                            <ul>
+                                <li>The first endpoint needs to create a key/value pair. We will give the value a default number of 0 for each key.</li>
+                                <li>Our next endpoint needs to retrieve a list of all key/value pairs created.</li>
+                                <li>Next we need an endpoint that will return to us information about a specified key/val pair.</li>
+                                <li>Then we need an endpoint that will increment the value of any given key.</li>
+                                <li>Lastly we need an endpoint that will allow us to delete any key/val pair.</li>
+                            </ul>
+                        </p>
+                        <p>
+                            With all of that in mind, the views created should look like this.
+                        </p>
+                        <div>
+                            <pre>
+                                <code>
+                                    from django.shortcuts import render
+                                    from rest_framework.views import APIView
+                                    from rest_framework import status
+                                    from rest_framework.response import Response
+                                    
+                                    from .models import KeyVal
+                                    from .serializers import KeyValueSerializer
+                                    
+                                    class CreateKeyVal(APIView):
+                                        # takes request arg and trys to post -- response status is either created or erro
+                                        def post(self, request):
+                                            try:
+                                                serializer = KeyValueSerializer(data=request.data)
+                                                if serializer.is_valid():
+                                                    serializer.save()
+                                                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                                            except:
+                                                return Response(status=status.HTTP_400_BAD_REQUEST)
+                                    
+                                    
+                                    class KeyValueList(APIView):
+                                        # gets all objects and returns usable data
+                                        def get(self, request):
+                                            keys = KeyVal.objects.all()
+                                            serializer = KeyValueSerializer(keys, many=True)        
+                                    
+                                            return Response(serializer.data)
+                                    
+                                    class GetKeyVal(APIView):
+                                        # gets and returns the data of the requested key
+                                        def get(self, request, keyName):
+                                            currentKey = KeyVal.objects.get(key=keyName)
+                                            serializer = KeyValueSerializer(currentKey)
+                                    
+                                            return Response(serializer.data)
+                                    
+                                    class IncrementKeyVal(APIView):
+                                        # increments val of specified key by specified num
+                                        def put(self, request, keyName):
+                                            key = KeyVal.objects.get(key=keyName)
+                                            
+                                            try:
+                                                key.val = key.val + 1
+                                                key.save()
+                                    
+                                                serializer = KeyValueSerializer(key)
+                                                return Response(serializer.data, status=status.HTTP_200_OK)
+                                            except ValueError:
+                                                return Response(status=status.HTTP_400_BAD_REQUEST)
+                                            except KeyError:
+                                                return Response(status=status.HTTP_400_BAD_REQUEST)
+                                            except:
+                                                return Response(status=status.HTTP_400_BAD_REQUEST)
+                                        
+                                    class KeyValDeleteByKeyName(APIView):
+                                        # deletes a specified key/val pair by name
+                                        def delete(self, request, keyName):
+                                            try: 
+                                                allKeys = KeyVal.objects.all()
+                                                key = KeyVal.objects.get(key=keyName)
+                                                key.delete()
+                                                serializer = KeyValueSerializer(allKeys)
+                                                return Response(serializer.data, status=status.HTTP_200_OK)
+                                            except:
+                                                return Response(status=status.HTTP_400_BAD_REQUEST)
+                                </code>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            <div>
+        </section>
+
+        <section >
+            <div class="container urls">
+                <div class="row">
+                    <h3 class="info-header">Create Urls</h3>
+                    <div>
+                        <p class="paragraphs">
+                            At this point mostly everything is already setup. However, in order to make our endpoints findable create a urls.py file. The contents of the file should look like this:
+                        </p>
+                        <pre>
+                            <code>
+                                from django.urls import path
+                                from . import views
+                                
+                                urlpatterns = [
+                                    path('list/', views.KeyValueList.as_view(), name='list'),
+                                    path('create/', views.CreateKeyVal.as_view(), name='create-keyval'),
+                                    path('view/<keyName>/', views.GetKeyVal.as_view(), name='kv-detail'),
+                                    path('inc/<keyName>/', views.IncrementKeyVal.as_view(), name='inc-key'),
+                                    path('delete/<keyName>/', views.KeyValDeleteByKeyName.as_view(), name='deletekey'),
+                                ]                                
+                            </code>
+                        </pre>
+                    </div>
+                    <p class="paragraphs">
+                        Now everything is all setup and the endpoints should be working.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </body>
+</html>

@@ -6,3 +6,4 @@ pillow
 pyaml
 uritemplate
 coreapi
+django-bootstrap-v5

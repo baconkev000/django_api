@@ -2,7 +2,6 @@ from django.shortcuts import render
 
 from PIL import Image, ImageOps
 
-
 # Create your views here.
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -12,9 +11,6 @@ from dogs_api.models import DogInfo
 from dogs_api.serializers import DogsInfoSerializer
 import requests
 
-import coreapi
-import coreschema
-from rest_framework.schemas import AutoSchema, ManualSchema
 import urllib.request
 
 # Gets a list of all dogs

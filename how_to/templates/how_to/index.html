@@ -1,0 +1,348 @@
+<html>
+    <head>
+        <title>DOCS</title>
+        {# Load the tag library #}
+    {% load bootstrap5 %}
+
+    {# Load CSS and JavaScript #}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+    {% load static %}
+
+    <link rel="stylesheet" type="text/css" href="{% static 'how_to/style.css' %}">
+
+    {# Display django.contrib.messages as Bootstrap alerts #}
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container">
+                <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                <div class="navbar-nav">
+                    <a class="nav-item nav-link" href="{% url 'index' %}">Recreate Dogs API</a>
+                    <a class="nav-item nav-link" href="{% url 'howto-keyval' %}">Recreate KeyVal API</a>
+                    <a class="nav-item nav-link" href="{% url 'howto-keyval' %}">API Docs</a>
+                </div>
+                </div>
+            </div>
+        </nav>
+        <section>
+            <div class="container">
+                <div class="row">
+                    <h2 id="index-title">How To Recreate the Dog Image Service</h2>
+                    <br />
+                    <p>This documentation assumes that you have already created a django project and are using Docker Compose.</p>
+                    <br />
+                </div>
+            </div>
+        </section>
+
+        <section class="section-background">
+            <div class="container objectives">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <h3 class="info-header">Objectives</h3>
+                        <ul>
+                            <li>Create a service that populates the database with two dozen images of dogs and any
+                                corresponding metadata from the images. Use <a href="https://dog.ceo/dog-api/documentation/">Dog API</a> to retrive images</li>
+                            <li>Create an API endpoint that returns two images</li>
+                            <li>Must return a visibly modified image of a dog</li>
+                            <li>Endpoint must contain the original image that was modified</li>
+                            <li>Endpoint must contain any metadata present in the original image</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="container packages">
+                <div class="row">
+                    <h3 class="info-header">Important Packages to Include</h3>
+                    <p class="paragraphs">
+                        To ensure that everything goes smoothly, be sure to include all of these packages into your requirements.text file.
+                    </p>
+                    <pre>
+                        <code>
+                            Django>=3.0,<4.0
+                            psycopg2>=2.8
+                            djangorestframework
+                            requests
+                            pillow
+                        </code>
+                    </pre>
+                    <p class="note">
+                        <strong>NOTE: </strong> It is important to note that you will likely need to use docker compose to install pillow into your project. You will also need to include rest_framework, pyaml, and requests
+                        under INCLUDED_APPS in youre settings.py.
+                    </p>
+
+                    <p class="paragraphs">
+                        Next visit your settings.py file and include the following snippets as well. These ensure that all images we download will load into a specific folder.
+                    </p>
+                    <pre>
+                        <code>
+                            STATIC_URL = '/static/'
+
+                            MEDIA_URL= '/media/'
+                            
+                            STATICFILES_DIRS = [
+                                os.path.join(BASE_DIR, 'static'),
+                            ]
+                            
+                            MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+                        </code>
+                    </pre>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-background">
+            <div class="container models">
+                <div class="row">
+                    <h3 class="info-header">Create the Model</h3>
+                    <div>
+                        <p class="paragraphs">
+                            Create three model fields: <strong>breed, org_img, and mod_img.</strong> The three fields represent the breed, the original dog image, and the modified dog image that the api will return.
+                        <br />
+                        Define them like so:
+                        </p>
+                        <div>
+                            <pre>
+                                <code>
+                                    from django.db import models
+
+                                    class DogInfo(models.Model):
+                                        breed = models.CharField(max_length=500)
+                                        org_img = models.CharField(max_length=500)
+                                        mod_img = models.CharField(max_length=500)
+
+                                        def __breed__(self):
+                                        return self.breed
+                                    
+                                        def __str_org_img__(self):
+                                            return self.org_img
+                                        
+                                        def __str_mod_img__(self):
+                                            return self.mod_img
+                                </code>
+                            </pre>
+                        </div>
+                        <p class="paragraphs">
+                        Don't forget to make migrations. The command should looke like this:
+                        </p>
+                        <div>
+                            <pre>
+                                <code>
+                                    docker-compose exec web manage.py makemigrations
+                                    docker-compose exec web manage.py migrate
+                                </code>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            <div>
+        </section>
+
+        <section>
+            <div class="container serializers">
+                <div class="row">
+                    <h3 class="info-header">Create the Serializer</h3>
+                    <div>
+                        <p class="paragraphs">
+                            Create the serializers for each model field like this: 
+                        </p>
+                        <div>
+                            <pre>
+                                <code>
+                                    from rest_framework import serializers
+                                    from .models import DogInfo
+
+                                    class DogsInfoSerializer(serializers.ModelSerializer):
+                                        breed = serializers.CharField()
+                                        org_img = serializers.CharField()
+                                        mod_img = serializers.CharField()
+
+                                    class Meta:
+                                        # specifies what information is shown in the api response -- __all__ shows all info
+                                        model = DogInfo
+                                        fields = '__all__'
+                                </code>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            <div>
+        </section>
+        
+        <section class="section-background">
+            <div class="container views">
+                <div class="row">
+                    <h3 class="info-header">Create the Views</h3>
+                    <div>
+                        <p class="paragraphs">
+                            The services needs to be able to retrive images from the Dog API provided and we need to somehow save that information in the database.
+                            Trying to save a literal image in any database isn't very ideal so instead we will store the images elsewhere and give our database a reference to 
+                            our image locations. We also need to be able to convert our images to a modified version of themselves. For this we need to add a function that looks like this.
+                        </p>
+                        <div>
+                            <pre>
+                                <code>
+                                    from django.shortcuts import render
+
+                                    from PIL import Image, ImageOps
+                                    from dogs_api.models import DogInfo
+                                    import requests
+                                    import urllib.request
+
+                                    def add_dogs():
+
+                                    root = 'http://localhost:8000'
+                                    path = '/media/images/'
+                                    urlPath = root + path
+
+                                    # turns response into usable data and creates new dog objects
+                                    r = requests.get('https://dog.ceo/api/breeds/image/random/24')
+                                    urls = r.json()['message']
+
+                                    for x in urls:
+
+                                        breedName = x.split('/')[4]
+                                        imgName = breedName + '.jpg'
+                                        urllib.request.urlretrieve(x, 'media/images/' + imgName)
+
+                                        org_path = urlPath + imgName
+                                        mod_path = urlPath + 'mod/' + imgName
+
+                                        # create a grayscale/modded version of the original dog image and store it in the mod images folder
+                                        img = Image.open('.' + path + imgName)
+                                        gray_img = ImageOps.grayscale(img)
+                                        gray_img.save('./media/images/mod/' + imgName)
+
+                                        newDog = DogInfo(breed=breedName, org_img=org_path, mod_img=mod_path)
+                                        
+                                        newDog.save()
+                                </code>
+                            </pre>
+                        </div>
+                        <p class="paragraphs">
+                            In this function we are doing several things. First we define the url path of where the images can be found. We then make our api request from the Dog API
+                            and retrive the urls of each dog image we will be using. We then loop through each url and save the dog image into a folder named media. We also, in the same loop, convert that image into a grayscale
+                            version of itself and save the modified version in a sub-folder(named mod) of the previous. The next thing we do is create a new Dog object and store all of the information into our databse.
+                        </p>
+                        <p class="paragraphs">
+                            Next we need to create two api endpoints. The first endpoint will grab a list of all 24 dogs we retrive. The second endpoint will return the data of any dog specified. Each dog is given an ID so we use that as
+                            a request parameter for the second endpoint. The two views should look like this:
+                        </p>
+                        <pre>
+                            <code>
+                                from django.shortcuts import render
+
+                                from PIL import Image, ImageOps
+                
+                                from rest_framework.views import APIView
+                                from rest_framework.response import Response
+                                from rest_framework import status
+
+                                from dogs_api.models import DogInfo
+                                from dogs_api.serializers import DogsInfoSerializer
+
+                                import requests
+                                import urllib.request
+
+                                class DogInfoList(APIView):
+
+                                    def get(self, request):
+                                        
+                                        if DogInfo.objects.all().count() != 24:
+                                            add_dogs()
+                                
+                                        dogs = DogInfo.objects.all()
+                                        serializer = DogsInfoSerializer(dogs, many=True)
+                                        return Response(serializer.data)
+                            
+                                class DogImagesMod(APIView):
+
+                                    def get(self, request, pk):
+                                        if DogInfo.objects.all().count() != 24:
+                                            add_dogs()
+                                
+                                        dog = DogInfo.objects.get(id=pk)
+                                        serialzer = DogsInfoSerializer(dog)
+                                
+                                        return Response(serialzer.data, status=status.HTTP_200_OK)
+                            </code>
+                        </pre>
+                    </div>
+                </div>
+            <div>
+        </section>
+
+        <section >
+            <div class="container urls">
+                <div class="row">
+                    <h3 class="info-header">Create Urls</h3>
+                    <div>
+                        <p class="paragraphs">
+                            At this point mostly everything is already setup. However, in order to make our endpoints and the images findable. If you haven't already, 
+                            create a urls.py file. The contents of the file should look like this:
+                        </p>
+                        <pre>
+                            <code>
+                                from django.urls import path
+                                from . import views
+                                from django.conf.urls.static import static
+                                from django.conf import settings
+                                
+                                urlpatterns = [
+                                    path('', views.DogInfoList.as_view(), name='list'),
+                                    path('<int:pk>/', views.DogImagesMod.as_view(), name='dog-info'),
+                                ]   
+                                
+                                # specifies where all dog images should be stored
+                                urlpatterns += static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)
+                            </code>
+                        </pre>
+                        <p class="paragraphs">
+                            Be sure to include this in your root urls file as well.
+                        </p>
+                        <pre>
+                            <code>
+                                from django.conf import settings 
+                                from django.conf.urls.static import static
+                                
+                                urlpatterns = [
+                                    ...
+                                ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+                            </code>
+                        </pre>
+                    </div>
+                    <p class="paragraphs">
+                        Now everything is all setup and the endpoints should be working.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-background">
+            <div class="container usage">
+                <div class="row">
+                    <h3 class="info-header">Example Usage</h3>
+                    <div class="row">
+                        {% for i in response %}
+                            {% if i.id == randInt%}
+                                <p><strong>Breed: </strong>{{i.breed}}</p><br />
+                                <p>Refresh page for new dogs</p>
+                                <div class="col-sm-6">
+                                    <img src='{{i.org_img}}' width='100%'/>
+                                </div>
+                                <div class="col-sm-6">
+                                    <img src='{{i.mod_img}}' width='100%'/>
+                                </div>
+                            {%endif%}
+                        
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+    </body>
+</html>

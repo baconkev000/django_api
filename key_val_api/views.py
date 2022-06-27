@@ -1,26 +1,10 @@
-from sqlite3 import IntegrityError
-
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from rest_framework.schemas import AutoSchema
-
 from .models import KeyVal
 from .serializers import KeyValueSerializer
-
-# Create your views here.
-class KeyValueList(APIView):
-    """
-    Returns a list of all key/value pairs.
-    """
-    # gets all objects and returns usable data
-    def get(self, request):
-        keys = KeyVal.objects.all()
-        serializer = KeyValueSerializer(keys, many=True)        
-
-        return Response(serializer.data)
 
 class CreateKeyVal(APIView):
     """
@@ -33,10 +17,20 @@ class CreateKeyVal(APIView):
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except IntegrityError:
+        except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class KeyValueList(APIView):
+    """
+    Returns a list of all key/value pairs.
+    """
+    # gets all objects and returns usable data
+    def get(self, request):
+        keys = KeyVal.objects.all()
+        serializer = KeyValueSerializer(keys, many=True)        
+
+        return Response(serializer.data)
 
 class GetKeyVal(APIView):
     """
@@ -46,6 +40,7 @@ class GetKeyVal(APIView):
     def get(self, request, keyName):
         currentKey = KeyVal.objects.get(key=keyName)
         serializer = KeyValueSerializer(currentKey)
+
         return Response(serializer.data)
 
 class IncrementKeyVal(APIView):
